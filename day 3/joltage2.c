@@ -36,14 +36,13 @@ int main()
 long get_max_joltage(char* line, size_t len)
 {
   long max_joltage = 0;
-  int batteries_remaining = 12;
-  int left_idx = 0;
+  int batteries_remaining = 11;
+  int left_idx = -1;
   
-  for (; batteries_remaining > 0; batteries_remaining -= 1)
+  for (; batteries_remaining >= 0; batteries_remaining -= 1)
   {
-    char joltage = largest_off(line, len, left_idx, batteries_remaining - 1, &left_idx);
+    char joltage = largest_off(line, len, left_idx, batteries_remaining, &left_idx);
     max_joltage += (joltage - '0') * (long) pow(10l, (long) batteries_remaining);
-    batteries_remaining -= 1;
   }
   return max_joltage;
 }
@@ -51,7 +50,7 @@ long get_max_joltage(char* line, size_t len)
 char largest_off(char* line, size_t len, int left, int right, int* idx)
 {
   char max_val = 0;
-  for (int i = left; i < len - right; i++)
+  for (int i = left + 1; i < len - right; i++)
   {
     char val = line[i];
     if (val > max_val)
