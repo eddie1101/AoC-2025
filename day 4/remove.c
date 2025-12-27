@@ -4,8 +4,12 @@
 
 #define ADJACENT_THRESHOLD 4
 
-int can_reach(char* rolls, size_t r, size_t c, size_t num_rolls, size_t num_chars);
-int has_roll(char* roll, size_t r, size_t c, size_t num_rolls, size_t num_chars);
+int remove_rolls(char* rolls);
+int can_reach(char* rolls, size_t r, size_t c);
+int has_roll(char* roll, size_t r, size_t c);
+
+size_t num_lines = 0;
+size_t num_chars = 0;
 
 int main(int argc, char** argv)
 {
@@ -36,8 +40,6 @@ int main(int argc, char** argv)
   char* line = NULL;
   size_t len = 0;
   ssize_t readlen = 0;
-  long num_lines = 0;
-  long num_chars;
   while ((readlen = getline(&line, &len, input)) > -1)
   {
     if (readlen > 0) num_chars = readlen - 1;
@@ -45,8 +47,24 @@ int main(int argc, char** argv)
     num_lines += 1;
   }
 
-  printf("There are %ld total spaces to check.\n", num_lines * num_chars);
+  printf("There are %ld total spaces in the input.\n", num_lines * num_chars);
 
+  long total = 0;
+  long removed = -1;
+  while (removed != 0)
+  {
+    removed = remove_rolls(rolls);
+    total += removed;
+    printf("Removed %ld rolls.\n", removed);
+  }
+
+  printf("Can reach %d rolls by iteratively removing them.\n", total);
+  
+  return 0;
+}
+
+int remove_rolls(char* rolls)
+{
   int sum = 0;
   for (int i = 0; i < num_lines; i++)
   {
@@ -55,17 +73,14 @@ int main(int argc, char** argv)
       size_t idx = i * num_chars + n;
       if (rolls[idx] == '@')
       {
-        sum += can_reach(rolls, i, n, num_lines, num_chars);
+        sum += can_reach(rolls, i, n);
       }
     }
   }
-
-  printf("Can reach %d rolls.\n", sum);
-  
-  return 0;
+  return sum;
 }
 
-int can_reach(char* rolls, size_t r, size_t c, size_t num_lines, size_t num_chars)
+int can_reach(char* rolls, size_t r, size_t c)
 {
    int num_rolls = 0;
    for (int i = -1; i < 2; i++)
@@ -74,14 +89,19 @@ int can_reach(char* rolls, size_t r, size_t c, size_t num_lines, size_t num_char
      {
        if (i != 0 || n != 0)
        {
-         num_rolls += has_roll(rolls, r + i, c + n, num_lines, num_chars);
+         num_rolls += has_roll(rolls, r + i, c + n);
        }
      }
    }
-   return num_rolls < ADJACENT_THRESHOLD;
+   int reached = num_rolls < ADJACENT_THRESHOLD;
+   if (reached)
+   {
+     rolls[r * num_lines + c] = 'x';
+   }
+   return reached;
 }
 
-int has_roll(char* rolls, size_t r, size_t c, size_t num_lines, size_t num_chars)
+int has_roll(char* rolls, size_t r, size_t c)
 {
   if (r < 0 || r >= num_lines) // outside lateral edge
   {
