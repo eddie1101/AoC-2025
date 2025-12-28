@@ -2,80 +2,45 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BUF_SIZE 128
+#include <ecl.h>
 
-typedef struct
-{
-  size_t low;
-  size_t high;
-} range;
+#define BUF_SIZE 128
+#define MAX_FILENAME 128
 
 int main(int argc, char** argv)
 {
   char* filename = "input";
   if (argc > 1)
   {
-    filename = argv[1];
+    filename = malloc(MAX_FILENAME * sizeof(char));
+    strncpy(filename, argv[1], MAX_FILENAME);
   }
 
   FILE* input = fopen(filename, "r");
   if (!input)
   {
-    char* error_message;
-    sprintf(error_message, "Could not open file \'%s\':", filename);
+    const char* error_fmt = "Could not open file \'%s\'";
+    char* error_message = (char*) malloc(strnlen(error_fmt, 25) + strnlen(filename, MAX_FILENAME) * sizeof(char));
+    sprintf(error_message, error_fmt, filename);
     perror(error_message);
-    free(error_message);
     return -1;
   }
+
+  range_list* ranges = read_ranges_file(input);
+  print_ranges(ranges);
   
-  size_t range_list_size = 128;
-  size_t num_ranges = 0;
-  range* ranges = (range*) malloc(range_list_size * sizeof(range));
-  
-  char* line = (char*) malloc(BUF_SIZE);
+  char* line = (char*) malloc(BUF_SIZE * sizeof(char));
   size_t to_read = BUF_SIZE;
-  ssize_t read_status;
-  while ((read_status = getline(&line, &to_read, input)) > -1)
-  {
-    if (read_status == 1)
-    {
-      printf("Finished parsing %ld ranges.\n\n", num_ranges);
-      break;
-    }
-    
-    char* low = strtok(line, "-");
-    char* high = strtok(NULL, "-");
-
-    ranges[num_ranges].low = atol(low);
-    ranges[num_ranges].high = atol(high);
-
-    printf("Registered range #%ld: %s-%s", num_ranges, low, high);
-
-    num_ranges += 1;
-    if (num_ranges == range_list_size - 1)
-    {
-      range_list_size *= 2;
-      range* temp = (range*) realloc(ranges, range_list_size * sizeof(range));
-      if (!temp)
-      {
-        perror("Could not resize ranges array");
-      }
-      else
-      {
-        ranges = temp;
-      }
-    }
-  }
-
+  ssize_t read_status = 0;  
   long total = 0;
   while ((read_status = getline(&line, &to_read, input)) > -1)
   {
     long id = atol(line);
     int is_fresh = 0;  
-    for (size_t i = 0; i < num_ranges; i++)
+    for (size_t i = 0; i < ranges->num_ranges; i++)
     {
-      range r = ranges[i];
-      if (id >= r.low && id <= r.high)
+      range* r = get_range(ranges, i);
+      if (id >= r->low && id <= r->high)
       {
         is_fresh = 1;
         break;
